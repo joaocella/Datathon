@@ -1,0 +1,113 @@
+{
+    "1001": {
+        "titulo": "Desenvolvedor Python",
+        "cliente": "TechCorp",
+        "perfil_vaga": {
+            "cidade": "São Paulo",
+            "estado": "SP",
+            "pais": "Brasil",
+            "nivel_profissional": "Pleno",
+            "nivel_ingles": "Intermediário",
+            "nivel_espanhol": "Nenhum",
+            "competencia_tecnicas_e_comportamentais": [
+                "Python",
+                "API REST",
+                "SQL",
+                "Git"
+            ],
+            "principais_atividades": [
+                "Desenvolver APIs",
+                "Integração com banco de dados",
+                "Deploy em nuvem"
+            ]
+        }
+    },
+    "1002": {
+        "titulo": "Assistente Administrativo",
+        "cliente": "Financeira XP",
+        "perfil_vaga": {
+            "cidade": "Curitiba",
+            "estado": "PR",
+            "pais": "Brasil",
+            "nivel_profissional": "Júnior",
+            "nivel_ingles": "Básico",
+            "nivel_espanhol": "Nenhum",
+            "competencia_tecnicas_e_comportamentais": [
+                "Pacote Office",
+                "Excel",
+                "Atendimento"
+            ],
+            "principais_atividades": [
+                "Organização de documentos",
+                "Suporte ao time financeiro"
+            ]
+        }
+    },
+    "1003": {
+        "titulo": "Analista de Dados",
+        "cliente": "DataPlus",
+        "perfil_vaga": {
+            "cidade": "Rio de Janeiro",
+            "estado": "RJ",
+            "pais": "Brasil",
+            "nivel_profissional": "Sênior",
+            "nivel_ingles": "Avançado",
+            "nivel_espanhol": "Intermediário",
+            "competencia_tecnicas_e_comportamentais": [
+                "SQL",
+                "Python",
+                "Power BI",
+                "Machine Learning"
+            ],
+            "principais_atividades": [
+                "Análise de dados",
+                "Modelagem estatística",
+                "Criação de dashboards"
+            ]
+        }
+    },
+    "1004": {
+        "titulo": "Suporte Técnico",
+        "cliente": "InfraBR",
+        "perfil_vaga": {
+            "cidade": "Campinas",
+            "estado": "SP",
+            "pais": "Brasil",
+            "nivel_profissional": "Júnior",
+            "nivel_ingles": "Intermediário",
+            "nivel_espanhol": "Básico",
+            "competencia_tecnicas_e_comportamentais": [
+                "Windows",
+                "Help Desk",
+                "Hardware"
+            ],
+            "principais_atividades": [
+                "Atendimento ao usuário",
+                "Manutenção de computadores",
+                "Suporte técnico remoto"
+            ]
+        }
+    },
+    "1005": {
+        "titulo": "Estagiário de Marketing",
+        "cliente": "StartupX",
+        "perfil_vaga": {
+            "cidade": "Belo Horizonte",
+            "estado": "MG",
+            "pais": "Brasil",
+            "nivel_profissional": "Estagiário",
+            "nivel_ingles": "Básico",
+            "nivel_espanhol": "Nenhum",
+            "competencia_tecnicas_e_comportamentais": [
+                "Canva",
+                "Redes Sociais",
+                "Google Analytics"
+            ],
+            "principais_atividades": [
+                "Criação de posts",
+                "Monitoramento de métricas",
+                "Apoio em campanhas"
+            ]
+        }
+    }
+}
