@@ -150,75 +150,65 @@ print("✅ 'modelo_vagas.pkl' criado")
 """# --- PARTE 2: FUNÇÕES AUXILIARES DE DADOS E PRÉ-PROCESSAMENTO ---"""
 
 # --- PARTE 2: APLICATIVO STREAMLIT ---
+# -*- coding: utf-8 -*-
+"""
+FIX recrutamento_pro.py - VERSÃO CORRIGIDA E ESTÁVEL PARA DEPLOY
+"""
+
+# --- PARTE 1: IMPORTAÇÃO DE BIBLIOTECAS E CONFIGURAÇÕES GLOBAIS ---
 import streamlit as st
 import pandas as pd
 import json
 import os
 from datetime import datetime
 import joblib
+import numpy as np
 import plotly.express as px
 import sqlite3
 
-# Configuração da página
+# --- CONFIGURAÇÃO DA PÁGINA STREAMLIT ---
 st.set_page_config(
     page_title="Plataforma de Vagas - Datathon",
     layout="wide",
     page_icon="💼"
 )
 
-# Mapeamentos globais para formulários e pré-processamento
-experiencia_map = {
-    "Estagiário": 0,
-    "Júnior": 1,
-    "Pleno": 2,
-    "Sênior": 3,
-    "Especialista": 4
+# --- MAPEAMENTOS GLOBAIS ---
+EXPERIENCIA_MAP = {
+    "Estagiário": 0, "Júnior": 1, "Pleno": 2, "Sênior": 3, "Especialista": 4
+}
+ESCOLARIDADE_MAP = {
+    "Ensino Médio": 0, "Técnico": 1, "Superior Incompleto": 2,
+    "Superior Completo": 3, "Pós-graduação": 4, "Mestrado": 5, "Doutorado": 6
+}
+IDIOMA_MAP = {
+    "Nenhum": 0, "Básico": 1, "Intermediário": 2, "Avançado": 3, "Fluente": 4
 }
 
-escolaridade_map = {
-    "Ensino Médio": 0,
-    "Técnico": 1,
-    "Superior Incompleto": 2,
-    "Superior Completo": 3,
-    "Pós-graduação": 4,
-    "Mestrado": 5,
-    "Doutorado": 6
-}
+# --- FUNÇÕES AUXILIARES ---
 
-idioma_map = {
-    "Nenhum": 0,
-    "Básico": 1,
-    "Intermediário": 2,
-    "Avançado": 3,
-    "Fluente": 4
-}
-
-# Funções de banco de dados
+# Função para inicializar o banco de dados
 def init_db():
-    """Inicializa o banco de dados SQLite"""
-    conn = sqlite3.connect('candidatos.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS candidaturas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            vaga TEXT,
-            nome TEXT,
-            email TEXT,
-            linkedin TEXT,
-            experiencia TEXT,
-            escolaridade TEXT,
-            nivel_ingles TEXT,
-            nivel_espanhol TEXT,
-            habilidades TEXT,
-            cv TEXT,
-            data_hora DATETIME
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    """Inicializa o banco de dados SQLite e a tabela de candidaturas."""
+    try:
+        conn = sqlite3.connect('candidatos.db')
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS candidaturas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vaga TEXT, nome TEXT, email TEXT, linkedin TEXT,
+                experiencia TEXT, escolaridade TEXT, nivel_ingles TEXT,
+                nivel_espanhol TEXT, habilidades TEXT, cv TEXT, data_hora DATETIME
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"Erro ao inicializar o banco de dados: {e}")
 
+# Função para salvar candidatura no banco de dados
 def salvar_candidato_db(dados):
-    """Salva candidatura no banco de dados"""
+    """Salva uma nova candidatura no banco de dados."""
     try:
         conn = sqlite3.connect('candidatos.db')
         c = conn.cursor()
@@ -227,288 +217,190 @@ def salvar_candidato_db(dados):
             INSERT INTO candidaturas
             (vaga, nome, email, linkedin, experiencia, escolaridade, nivel_ingles, nivel_espanhol, habilidades, cv, data_hora)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            dados['vaga'], dados['nome'], dados['email'], dados['linkedin'],
-            dados['experiencia'], dados['escolaridade'], dados['nivel_ingles'],
-            dados['nivel_espanhol'], dados['habilidades'], dados['cv'], dados['data_hora']
-        ))
+        ''', tuple(dados.values()))
         conn.commit()
         conn.close()
         return True
     except Exception as e:
-        st.error(f"Erro ao salvar candidatura: {str(e)}")
+        st.error(f"Erro ao salvar candidatura no banco de dados: {e}")
         return False
 
+# Função para carregar todas as candidaturas
 def carregar_candidaturas():
-    """Carrega todas as candidaturas do banco de dados"""
+    """Carrega todas as candidaturas do banco de dados para um DataFrame."""
     try:
         conn = sqlite3.connect('candidatos.db')
         df = pd.read_sql_query("SELECT * FROM candidaturas", conn)
         conn.close()
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar candidaturas: {str(e)}")
+        st.error(f"Erro ao carregar candidaturas: {e}")
         return pd.DataFrame()
 
-# Função para carregar vagas
+# Função para carregar vagas do arquivo JSON
 def carregar_vagas():
+    """Carrega os dados das vagas do arquivo jobs_sample.json."""
     try:
         with open("jobs_sample.json", "r", encoding="utf-8") as f:
             data = json.load(f)
-
         vagas = []
         for vid, det in data.items():
-            perfil = det["perfil_vaga"]
+            perfil = det.get("perfil_vaga", {})
             vagas.append({
-                "title": det["titulo"],
-                "company": det["cliente"],
-                "location": f"{perfil['cidade']}, {perfil['estado']} - {perfil['pais']}",
-                "contract_type": "Não informado",
-                "salary": "Não informado",
+                "title": det.get("titulo", "Título não especificado"),
+                "company": det.get("cliente", "Cliente não especificado"),
+                "location": f"{perfil.get('cidade', 'N/A')}, {perfil.get('estado', 'N/A')}",
                 "description": "; ".join(perfil.get("atividades", [])),
                 "requirements": "; ".join(perfil.get("competencias", []))
             })
         return vagas
+    except FileNotFoundError:
+        st.error("Arquivo 'jobs_sample.json' não encontrado. Crie o arquivo ou faça o upload.")
+        return []
     except Exception as e:
-        st.error(f"Erro ao carregar vagas: {e}")
+        st.error(f"Erro ao carregar vagas do JSON: {e}")
         return []
 
-# Função de pré-processamento ATUALIZADA
+# Função de pré-processamento para o modelo
 def preprocess(df):
+    """Pré-processa os dados dos candidatos para a predição do modelo."""
     df2 = df.copy()
-
-    # Converter para string para garantir compatibilidade
-    for col in ["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]:
-        if col in df2.columns:
-            df2[col] = df2[col].astype(str)
-
-    # Mapeamento seguro
     for col, mapping in [
-        ("experiencia", experiencia_map),
-        ("escolaridade", escolaridade_map),
-        ("nivel_ingles", idioma_map),
-        ("nivel_espanhol", idioma_map)
+        ("experiencia", EXPERIENCIA_MAP),
+        ("escolaridade", ESCOLARIDADE_MAP),
+        ("nivel_ingles", IDIOMA_MAP),
+        ("nivel_espanhol", IDIOMA_MAP)
     ]:
         if col in df2.columns:
-            # Mapear valores e tratar não encontrados
-            df2[col] = df2[col].map(lambda x: mapping.get(x.strip(), 0))
+            df2[col] = df2[col].astype(str).map(mapping).fillna(0)
         else:
             df2[col] = 0
+    return df2[["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]].astype(int)
 
-    return df2[["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]].fillna(0).astype(int)
-
-# Inicialização do banco de dados
+# --- INICIALIZAÇÃO ---
 init_db()
 
-# Navegação
+# --- NAVEGAÇÃO NA BARRA LATERAL ---
 menu = st.sidebar.radio(
     "📂 Navegação",
     ["📌 Aplicar para Vagas", "🧠 Recrutamento Decision", "📊 Banco de Candidaturas"]
 )
 
-# SUBSTITUA TODA A SEÇÃO "APLICAR PARA VAGAS" POR ISTO:
-
+# --- PÁGINA 1: APLICAR PARA VAGAS ---
 if menu == "📌 Aplicar para Vagas":
     st.title("📌 Plataforma de Vagas - Datathon")
     vagas = carregar_vagas()
 
     if vagas:
-        escolha = st.selectbox(
-            "Selecione a vaga",
-            options=[v["title"] for v in vagas],
-            index=0
-        )
+        escolha_vaga = st.selectbox("Selecione a vaga", options=[v["title"] for v in vagas])
+        vaga_selecionada = next((v for v in vagas if v["title"] == escolha_vaga), None)
 
-        vaga = next(v for v in vagas if v["title"] == escolha)
+        if vaga_selecionada:
+            st.subheader(vaga_selecionada["title"])
+            st.write(f"**Empresa:** {vaga_selecionada['company']} | **Localização:** {vaga_selecionada['location']}")
+            st.write(f"**Descrição:** {vaga_selecionada['description']}")
+            st.write(f"**Requisitos:** {vaga_selecionada['requirements']}")
+            st.write("---")
 
-        st.subheader(vaga["title"])
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write(f"**Empresa:** {vaga['company']}")
-            st.write(f"**Localização:** {vaga['location']}")
-        with col2:
-            st.write(f"**Tipo de Contrato:** {vaga['contract_type']}")
-            st.write(f"**Salário:** {vaga['salary']}")
-
-        st.write("---")
-        st.write(f"**Descrição:** {vaga['description']}")
-        st.write(f"**Requisitos:** {vaga['requirements']}")
-
-        # Inicializar estados na session_state
-        if 'habilidades' not in st.session_state:
-            st.session_state.habilidades = []
-        for field in ['nome', 'email', 'linkedin', 'experiencia', 'escolaridade', 'nivel_ingles', 'nivel_espanhol']:
-            if field not in st.session_state:
-                st.session_state[field] = ''
-
-        # --- INÍCIO DO FORMULÁRIO ---
-        with st.form("form_candidatura"):
-            st.subheader("Formulário de Candidatura")
-
-            nome = st.text_input("Nome Completo*", value=st.session_state.get('nome', ''))
-            email = st.text_input("Email*", value=st.session_state.get('email', ''))
-            linkedin = st.text_input("LinkedIn (opcional)", value=st.session_state.get('linkedin', ''))
-
-            col1_form, col2_form = st.columns(2)
-            with col1_form:
-                experiencia = st.selectbox("Nível de Experiência*", list(experiencia_map.keys()), index=list(experiencia_map.keys()).index(st.session_state.get('experiencia')) if st.session_state.get('experiencia') in experiencia_map else 0)
-                escolaridade = st.selectbox("Escolaridade*", list(escolaridade_map.keys()), index=list(escolaridade_map.keys()).index(st.session_state.get('escolaridade')) if st.session_state.get('escolaridade') in escolaridade_map else 0)
-            with col2_form:
-                nivel_ingles = st.selectbox("Inglês*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.get('nivel_ingles')) if st.session_state.get('nivel_ingles') in idioma_map else 0)
-                nivel_espanhol = st.selectbox("Espanhol*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.get('nivel_espanhol')) if st.session_state.get('nivel_espanhol') in idioma_map else 0)
-
-            st.subheader("Habilidades Técnicas")
-            nova_habilidade = st.text_input("Digite uma habilidade e pressione Enter ou clique em Adicionar", key="nova_habilidade")
-            
-            # Botões de habilidade (ainda dentro do form)
-            # A lógica deles será tratada fora do form para evitar reenvios indesejados
-            
-            enviar_cv = st.file_uploader("Anexar CV (PDF ou DOCX)", type=["pdf", "docx"])
-
-            # --- BOTÃO DE SUBMISSÃO DO FORMULÁRIO ---
-            submitted = st.form_submit_button("🚀 Enviar Candidatura")
-
-            # --- LÓGICA DE SUBMISSÃO (AINDA DENTRO DO 'WITH ST.FORM') ---
-            if submitted:
-                if not nome or not email:
-                    st.error("⚠️ Campos obrigatórios não preenchidos (Nome e Email)")
-                else:
-                    # Salvar os dados do formulário na session_state para persistência
-                    st.session_state.nome = nome
-                    st.session_state.email = email
-                    st.session_state.linkedin = linkedin
-                    st.session_state.experiencia = experiencia
-                    st.session_state.escolaridade = escolaridade
-                    st.session_state.nivel_ingles = nivel_ingles
-                    st.session_state.nivel_espanhol = nivel_espanhol
-                    
-                    dados_candidato = {
-                        "vaga": escolha,
-                        "nome": nome,
-                        "email": email,
-                        "linkedin": linkedin,
-                        "experiencia": experiencia,
-                        "escolaridade": escolaridade,
-                        "nivel_ingles": nivel_ingles,
-                        "nivel_espanhol": nivel_espanhol,
-                        "habilidades": ", ".join(st.session_state.habilidades) if st.session_state.habilidades else "Nenhuma",
-                        "cv": enviar_cv.name if enviar_cv else "Não enviado"
-                    }
-
-                    if salvar_candidato_db(dados_candidato):
-                        st.success("✅ Candidatura enviada com sucesso!")
-                        # Limpar apenas as habilidades após o envio bem-sucedido
-                        st.session_state.habilidades = []
-                    else:
-                        st.error("❌ Falha ao salvar a candidatura no banco de dados.")
-        
-        # --- LÓGICA DE HABILIDADES (FORA DO FORMULÁRIO) ---
-        # Isso evita que o formulário seja submetido ao adicionar uma habilidade
-        if 'nova_habilidade' in st.session_state and st.session_state.nova_habilidade:
-            if st.session_state.nova_habilidade.strip() not in st.session_state.habilidades:
-                st.session_state.habilidades.append(st.session_state.nova_habilidade.strip())
-            st.session_state.nova_habilidade = "" # Limpa o campo de texto
-            st.rerun() # Força a atualização da interface
-
-        if st.session_state.habilidades:
-            st.write("**Habilidades adicionadas:**")
-            st.write(", ".join(st.session_state.habilidades))
-            if st.button("🧹 Limpar Habilidades"):
+            # Inicializar session_state para habilidades
+            if 'habilidades' not in st.session_state:
                 st.session_state.habilidades = []
-                st.rerun()
 
+            with st.form("form_candidatura", clear_on_submit=True):
+                st.subheader("Formulário de Candidatura")
+                nome = st.text_input("Nome Completo*", placeholder="Seu nome completo")
+                email = st.text_input("Email*", placeholder="seu@email.com")
+                linkedin = st.text_input("LinkedIn (opcional)", placeholder="https://linkedin.com/in/seu-perfil" )
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    experiencia = st.selectbox("Nível de Experiência*", list(EXPERIENCIA_MAP.keys()))
+                    escolaridade = st.selectbox("Escolaridade*", list(ESCOLARIDADE_MAP.keys()))
+                with col2:
+                    nivel_ingles = st.selectbox("Inglês*", list(IDIOMA_MAP.keys()))
+                    nivel_espanhol = st.selectbox("Espanhol*", list(IDIOMA_MAP.keys()))
+
+                habilidades_str = st.text_input("Habilidades Técnicas (separadas por vírgula)", placeholder="Ex: Python, SQL, Power BI")
+                enviar_cv = st.file_uploader("Anexar CV (PDF ou DOCX)", type=["pdf", "docx"])
+
+                submitted = st.form_submit_button("🚀 Enviar Candidatura")
+
+                if submitted:
+                    if not nome or not email:
+                        st.error("⚠️ Campos obrigatórios não preenchidos (Nome e Email)")
+                    else:
+                        dados = {
+                            "vaga": escolha_vaga, "nome": nome, "email": email, "linkedin": linkedin,
+                            "experiencia": experiencia, "escolaridade": escolaridade,
+                            "nivel_ingles": nivel_ingles, "nivel_espanhol": nivel_espanhol,
+                            "habilidades": habilidades_str,
+                            "cv": enviar_cv.name if enviar_cv else "Não enviado"
+                        }
+                        if salvar_candidato_db(dados):
+                            st.success("✅ Candidatura enviada com sucesso!")
+                        else:
+                            st.error("❌ Falha ao salvar a candidatura.")
     else:
         st.warning("Nenhuma vaga disponível no momento.")
 
-
-
+# --- PÁGINA 2: RECRUTAMENTO DECISION ---
 elif menu == "🧠 Recrutamento Decision":
     st.title("🧠 Recrutamento Decision - Análise Preditiva")
-
-    uploaded_file = st.file_uploader(
-        "Carregue o arquivo CSV de candidatos",
-        type=["csv"],
-        help="O arquivo deve conter colunas para experiência, escolaridade e níveis de idioma"
-    )
+    uploaded_file = st.file_uploader("Carregue o arquivo CSV de candidatos", type=["csv"])
 
     if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        st.success("Arquivo carregado com sucesso!")
-
-        with st.expander("Visualizar dados brutos"):
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.success("Arquivo carregado com sucesso!")
             st.dataframe(df.head())
 
-        # Verificação de campos obrigatórios
-        campos_necessarios = ["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]
-        campos_faltantes = [campo for campo in campos_necessarios if campo not in df.columns]
+            campos_necessarios = ["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]
+            if all(c in df.columns for c in campos_necessarios):
+                X = preprocess(df)
+                st.subheader("Dados Pré-processados para Análise")
+                st.dataframe(X.head())
 
-        if campos_faltantes:
-            st.warning(f"⚠️ Campos faltantes: {', '.join(campos_faltantes)}")
-        else:
-            st.subheader("Dados Pré-processados")
-            X = preprocess(df)
-            st.dataframe(X.head())
+                if st.button("Executar Análise Preditiva"):
+                    try:
+                        modelo = joblib.load("modelo_vagas.pkl")
+                        df["score_sucesso"] = modelo.predict_proba(X)[:, 1]
+                        df_ranked = df.sort_values("score_sucesso", ascending=False)
+                        
+                        st.subheader("🏆 Ranking de Candidatos")
+                        st.dataframe(df_ranked.style.background_gradient(subset=["score_sucesso"], cmap="viridis"))
+                        
+                        fig = px.histogram(df_ranked, x="score_sucesso", nbins=20, title="Distribuição dos Scores de Sucesso")
+                        st.plotly_chart(fig)
 
-            if st.button("Executar Análise Preditiva"):
-                try:
-                    modelo = joblib.load("modelo_vagas.pkl")
-                    df["score_sucesso"] = modelo.predict_proba(X)[:, 1]
+                        csv_export = df_ranked.to_csv(index=False).encode('utf-8')
+                        st.download_button("📥 Exportar Resultados", data=csv_export, file_name="resultados_analise.csv", mime="text/csv")
+                    except FileNotFoundError:
+                        st.error("Arquivo 'modelo_vagas.pkl' não encontrado. Faça o upload do modelo.")
+                    except Exception as e:
+                        st.error(f"Erro na análise preditiva: {e}")
+            else:
+                st.warning(f"⚠️ O arquivo precisa conter as colunas: {', '.join(campos_necessarios)}")
+        except Exception as e:
+            st.error(f"Erro ao ler o arquivo CSV: {e}")
 
-                    st.subheader("🏆 Ranking de Candidatos")
-                    st.dataframe(
-                        df.sort_values("score_sucesso", ascending=False)
-                        .style.background_gradient(subset=["score_sucesso"], cmap="YlGnBu")
-                    )
-
-                    st.subheader("📊 Distribuição de Scores")
-                    fig = px.histogram(
-                        df,
-                        x="score_sucesso",
-                        nbins=10,
-                        title="Distribuição de Probabilidades de Sucesso"
-                    )
-                    st.plotly_chart(fig)
-
-                    st.download_button(
-                        "📥 Exportar Resultados",
-                        data=df.to_csv(index=False).encode("utf-8"),
-                        file_name="resultados_analise.csv",
-                        mime="text/csv"
-                    )
-
-                except Exception as e:
-                    st.error(f"Erro na análise: {str(e)}")
-
+# --- PÁGINA 3: BANCO DE CANDIDATURAS ---
 elif menu == "📊 Banco de Candidaturas":
     st.title("📊 Banco de Candidaturas")
-
     df_candidaturas = carregar_candidaturas()
 
     if not df_candidaturas.empty:
-        st.dataframe(
-            df_candidaturas.sort_values("data_hora", ascending=False)
-        )
-
+        st.dataframe(df_candidaturas.sort_values("data_hora", ascending=False))
+        
         col1, col2 = st.columns(2)
-        with col1:
-            st.metric(
-                "Total de Candidaturas",
-                len(df_candidaturas)
-            )
-        with col2:
-            st.metric(
-                "Vagas Únicas",
-                df_candidaturas["vaga"].nunique()
-            )
+        col1.metric("Total de Candidaturas", len(df_candidaturas))
+        col2.metric("Vagas Únicas com Aplicações", df_candidaturas["vaga"].nunique())
 
-        st.download_button(
-            "📥 Exportar Dados Completos",
-            data=df_candidaturas.to_csv(index=False).encode("utf-8"),
-            file_name="candidaturas_completas.csv",
-            mime="text/csv"
-        )
+        csv_export = df_candidaturas.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Exportar Dados Completos", data=csv_export, file_name="candidaturas_completas.csv", mime="text/csv")
     else:
-        st.info("Nenhuma candidatura registrada no banco de dados.")
+        st.info("Nenhuma candidatura registrada no banco de dados ainda.")
+
+
 
 # --- PARTE 3: CONFIGURAÇÃO DO NGROK (CORRIGIDO) ---
 import subprocess
