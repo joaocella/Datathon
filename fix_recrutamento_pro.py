@@ -306,6 +306,8 @@ menu = st.sidebar.radio(
     ["📌 Aplicar para Vagas", "🧠 Recrutamento Decision", "📊 Banco de Candidaturas"]
 )
 
+# SUBSTITUA TODA A SEÇÃO "APLICAR PARA VAGAS" POR ISTO:
+
 if menu == "📌 Aplicar para Vagas":
     st.title("📌 Plataforma de Vagas - Datathon")
     vagas = carregar_vagas()
@@ -332,98 +334,55 @@ if menu == "📌 Aplicar para Vagas":
         st.write(f"**Descrição:** {vaga['description']}")
         st.write(f"**Requisitos:** {vaga['requirements']}")
 
-        # Inicializar lista de habilidades na session_state
+        # Inicializar estados na session_state
         if 'habilidades' not in st.session_state:
             st.session_state.habilidades = []
-
-        # Inicializar estados para campos do formulário
         for field in ['nome', 'email', 'linkedin', 'experiencia', 'escolaridade', 'nivel_ingles', 'nivel_espanhol']:
             if field not in st.session_state:
                 st.session_state[field] = ''
 
-        with st.form("form_candidatura"):  # REMOVIDO: clear_on_submit=True
+        # --- INÍCIO DO FORMULÁRIO ---
+        with st.form("form_candidatura"):
             st.subheader("Formulário de Candidatura")
 
-            nome = st.text_input("Nome Completo*",
-                                 placeholder="Seu nome completo",
-                                 value=st.session_state.nome)
+            nome = st.text_input("Nome Completo*", value=st.session_state.get('nome', ''))
+            email = st.text_input("Email*", value=st.session_state.get('email', ''))
+            linkedin = st.text_input("LinkedIn (opcional)", value=st.session_state.get('linkedin', ''))
 
-            email = st.text_input("Email*",
-                                  placeholder="seu@email.com",
-                                  value=st.session_state.email)
+            col1_form, col2_form = st.columns(2)
+            with col1_form:
+                experiencia = st.selectbox("Nível de Experiência*", list(experiencia_map.keys()), index=list(experiencia_map.keys()).index(st.session_state.get('experiencia')) if st.session_state.get('experiencia') in experiencia_map else 0)
+                escolaridade = st.selectbox("Escolaridade*", list(escolaridade_map.keys()), index=list(escolaridade_map.keys()).index(st.session_state.get('escolaridade')) if st.session_state.get('escolaridade') in escolaridade_map else 0)
+            with col2_form:
+                nivel_ingles = st.selectbox("Inglês*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.get('nivel_ingles')) if st.session_state.get('nivel_ingles') in idioma_map else 0)
+                nivel_espanhol = st.selectbox("Espanhol*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.get('nivel_espanhol')) if st.session_state.get('nivel_espanhol') in idioma_map else 0)
 
-            linkedin = st.text_input("LinkedIn (opcional)",
-                                     placeholder="https://linkedin.com/in/seu-perfil",
-                                     value=st.session_state.linkedin)
-
-            col1, col2 = st.columns(2)
-            with col1:
-                experiencia = st.selectbox(
-                    "Nível de Experiência*",
-                    list(experiencia_map.keys()),
-                    index=list(experiencia_map.keys()).index(st.session_state.experiencia)
-                    if st.session_state.experiencia in experiencia_map else 0
-                )
-                escolaridade = st.selectbox(
-                    "Escolaridade*",
-                    list(escolaridade_map.keys()),
-                    index=list(escolaridade_map.keys()).index(st.session_state.escolaridade)
-                    if st.session_state.escolaridade in escolaridade_map else 0
-                )
-            with col2:
-                nivel_ingles = st.selectbox(
-                    "Inglês*",
-                    list(idioma_map.keys()),
-                    index=list(idioma_map.keys()).index(st.session_state.nivel_ingles)
-                    if st.session_state.nivel_ingles in idioma_map else 0
-                )
-                nivel_espanhol = st.selectbox(
-                    "Espanhol*",
-                    list(idioma_map.keys()),
-                    index=list(idioma_map.keys()).index(st.session_state.nivel_espanhol)
-                    if st.session_state.nivel_espanhol in idioma_map else 0
-                )
-
-            # Seção de Habilidades
             st.subheader("Habilidades Técnicas")
-            nova_habilidade = st.text_input(
-                "Digite uma habilidade e clique em Adicionar",
-                placeholder="Ex: Python, SQL, etc.",
-                key="nova_habilidade"
-            )
+            nova_habilidade = st.text_input("Digite uma habilidade e pressione Enter ou clique em Adicionar", key="nova_habilidade")
+            
+            # Botões de habilidade (ainda dentro do form)
+            # A lógica deles será tratada fora do form para evitar reenvios indesejados
+            
+            enviar_cv = st.file_uploader("Anexar CV (PDF ou DOCX)", type=["pdf", "docx"])
 
-            col_add, col_clear = st.columns(2)
-            with col_add:
-                adicionar_habilidade = st.form_submit_button("➕ Adicionar Habilidade")
-            with col_clear:
-                limpar_habilidades = st.form_submit_button("🧹 Limpar Todas")
+            # --- BOTÃO DE SUBMISSÃO DO FORMULÁRIO ---
+            submitted = st.form_submit_button("🚀 Enviar Candidatura")
 
-            if adicionar_habilidade and nova_habilidade:
-                st.session_state.habilidades.append(nova_habilidade.strip())
-                st.rerun()
-
-            if limpar_habilidades:
-                st.session_state.habilidades = []
-                st.rerun()
-
-            if st.session_state.habilidades:
-                st.write("**Habilidades adicionadas:**")
-                for i, hab in enumerate(st.session_state.habilidades):
-                    st.write(f"{i+1}. {hab}")
-
-            enviar_cv = st.file_uploader(
-                "Anexar CV (PDF ou DOCX)",
-                type=["pdf", "docx"]
-            )
-
-            submitted = st.form_submit_button("Enviar Candidatura")
-
-        try
+            # --- LÓGICA DE SUBMISSÃO (AINDA DENTRO DO 'WITH ST.FORM') ---
             if submitted:
                 if not nome or not email:
                     st.error("⚠️ Campos obrigatórios não preenchidos (Nome e Email)")
                 else:
-                    dados = {
+                    # Salvar os dados do formulário na session_state para persistência
+                    st.session_state.nome = nome
+                    st.session_state.email = email
+                    st.session_state.linkedin = linkedin
+                    st.session_state.experiencia = experiencia
+                    st.session_state.escolaridade = escolaridade
+                    st.session_state.nivel_ingles = nivel_ingles
+                    st.session_state.nivel_espanhol = nivel_espanhol
+                    
+                    dados_candidato = {
                         "vaga": escolha,
                         "nome": nome,
                         "email": email,
@@ -436,24 +395,32 @@ if menu == "📌 Aplicar para Vagas":
                         "cv": enviar_cv.name if enviar_cv else "Não enviado"
                     }
 
-                    if salvar_candidato_db(dados):
+                    if salvar_candidato_db(dados_candidato):
                         st.success("✅ Candidatura enviada com sucesso!")
-                        # Resetar apenas habilidades após envio
+                        # Limpar apenas as habilidades após o envio bem-sucedido
                         st.session_state.habilidades = []
-
-                        # Manter outros campos para correção se necessário
-                        st.session_state.nome = nome
-                        st.session_state.email = email
-                        st.session_state.linkedin = linkedin
-                        st.session_state.experiencia = experiencia
-                        st.session_state.escolaridade = escolaridade
-                        st.session_state.nivel_ingles = nivel_ingles
-                        st.session_state.nivel_espanhol = nivel_espanhol
                     else:
-                        st.error("❌ Falha ao salvar candidatura")
+                        st.error("❌ Falha ao salvar a candidatura no banco de dados.")
+        
+        # --- LÓGICA DE HABILIDADES (FORA DO FORMULÁRIO) ---
+        # Isso evita que o formulário seja submetido ao adicionar uma habilidade
+        if 'nova_habilidade' in st.session_state and st.session_state.nova_habilidade:
+            if st.session_state.nova_habilidade.strip() not in st.session_state.habilidades:
+                st.session_state.habilidades.append(st.session_state.nova_habilidade.strip())
+            st.session_state.nova_habilidade = "" # Limpa o campo de texto
+            st.rerun() # Força a atualização da interface
+
+        if st.session_state.habilidades:
+            st.write("**Habilidades adicionadas:**")
+            st.write(", ".join(st.session_state.habilidades))
+            if st.button("🧹 Limpar Habilidades"):
+                st.session_state.habilidades = []
+                st.rerun()
 
     else:
         st.warning("Nenhuma vaga disponível no momento.")
+
+
 
 elif menu == "🧠 Recrutamento Decision":
     st.title("🧠 Recrutamento Decision - Análise Preditiva")
