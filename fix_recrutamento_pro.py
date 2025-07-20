@@ -146,12 +146,9 @@ modelo.fit(X_dummy, y_dummy)
 joblib.dump(modelo, "modelo_vagas.pkl")
 print("✅ 'modelo_vagas.pkl' criado")
 
-"""# --- PARTE 2: FUNÇÕES AUXILIARES DE DADOS E PRÉ-PROCESSAMENTO ---"""
-
 # --- PARTE 2: APLICATIVO STREAMLIT ---
 # -*- coding: utf-8 -*-
 """
-FIX recrutamento_pro.py - VERSÃO CORRIGIDA E ESTÁVEL PARA DEPLOY
 """
 
 # --- PARTE 1: IMPORTAÇÃO DE BIBLIOTECAS E CONFIGURAÇÕES GLOBAIS ---
