@@ -89,6 +89,8 @@ python programa2_streamlit.py
 5. A URL pública do aplicativo será exibida no terminal.
 
 ---
+6. Aqui está o MVP da plataforma deployado:
+https://datathon-trecmzeaappcbwmbklsr4h3.streamlit.app/
 
 ## ✅ Requisitos adicionais
 
@@ -103,7 +105,7 @@ python programa2_streamlit.py
 - O vídeo no YouTube cobre **toda a lógica do Programa 1 e do Programa 2**.
 - Os scripts estão organizados por etapas para facilitar manutenção e evolução.
 - É possível adaptar o modelo para outros tipos de recrutamento e critérios.
-
+- Compartilhamos um documento com a reunião dos links.
 ---
 
 ## 📜 Licença
