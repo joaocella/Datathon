@@ -13,7 +13,6 @@ Original file is located at
 
 # --- PARTE 1: INSTALAÇÃO E CONFIGURAÇÃO INICIAL ---
 # 1.1. Instalação de Bibliotecas
-!pip install streamlit pyngrok scikit-learn pandas numpy plotly_express sqlalchemy --quiet
 
 # 1.2. Importação de Bibliotecas Essenciais
 import pandas as pd
