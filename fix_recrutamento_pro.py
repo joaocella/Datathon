@@ -418,6 +418,7 @@ if menu == "📌 Aplicar para Vagas":
 
             submitted = st.form_submit_button("Enviar Candidatura")
 
+        try
             if submitted:
                 if not nome or not email:
                     st.error("⚠️ Campos obrigatórios não preenchidos (Nome e Email)")
