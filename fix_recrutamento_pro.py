@@ -405,7 +405,6 @@ elif menu == "📊 Banco de Candidaturas":
 import subprocess
 import time
 from pyngrok import ngrok
-from IPython.display import clear_output
 import os
 
 # Token Ngrok - INSIRA SEU TOKEN AQUI!
@@ -640,7 +639,6 @@ elif menu == "📊 Banco de Candidaturas":
         try:
             while True:
                 time.sleep(10)
-                clear_output(wait=True)
                 print(f"✅ Aplicativo ativo em: {public_url.public_url}")
                 print("Pressione Ctrl+C para encerrar")
         except KeyboardInterrupt:
