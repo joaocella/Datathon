@@ -543,9 +543,7 @@ elif menu == "📊 Banco de Candidaturas":
     else:
         st.info("Nenhuma candidatura registrada no banco de dados.")
 
-"""# --- PARTE 3: CONFIGURAÇÃO DO NGROK ---"""
-
-# --- PARTE 3: CONFIGURAÇÃO DO NGROK ---
+# --- PARTE 3: CONFIGURAÇÃO DO NGROK (CORRIGIDO) ---
 import subprocess
 import time
 from pyngrok import ngrok
@@ -565,6 +563,7 @@ else:
         # Salvar o aplicativo Streamlit em um arquivo
         STREAMLIT_SCRIPT = "streamlit_app.py"
         with open(STREAMLIT_SCRIPT, "w", encoding="utf-8") as f:
+            # (O conteúdo do seu script streamlit vai aqui, mantido como está)
             f.write("""
 # --- STREAMLIT APP SCRIPT ---
 import streamlit as st
@@ -632,13 +631,9 @@ def carregar_vagas():
 # Função de pré-processamento ATUALIZADA
 def preprocess(df):
     df2 = df.copy()
-
-    # Converter para string para garantir compatibilidade
     for col in ["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]:
         if col in df2.columns:
             df2[col] = df2[col].astype(str)
-
-    # Mapeamento seguro
     for col, mapping in [
         ("experiencia", experiencia_map),
         ("escolaridade", escolaridade_map),
@@ -646,11 +641,9 @@ def preprocess(df):
         ("nivel_espanhol", idioma_map)
     ]:
         if col in df2.columns:
-            # Mapear valores e tratar não encontrados
             df2[col] = df2[col].map(lambda x: mapping.get(x.strip(), 0))
         else:
             df2[col] = 0
-
     return df2[["experiencia", "escolaridade", "nivel_ingles", "nivel_espanhol"]].fillna(0).astype(int)
 
 # Navegação
@@ -659,100 +652,55 @@ menu = st.sidebar.radio("📂 Navegação", ["📌 Aplicar para Vagas", "🧠 Re
 if menu == "📌 Aplicar para Vagas":
     st.title("📌 Plataforma de Vagas - Datathon")
     vagas = carregar_vagas()
-
     if vagas:
         escolha = st.selectbox("Selecione a vaga", options=[v["title"] for v in vagas])
         vaga = next(v for v in vagas if v["title"] == escolha)
         st.subheader(vaga["title"])
         st.write(f"**Empresa:** {vaga['company']}")
         st.write(f"**Localização:** {vaga['location']}")
-        st.write(f"**Tipo de Contrato:** {vaga['contract_type']}")
-        st.write(f"**Salário:** {vaga['salary']}")
         st.write(f"**Descrição:** {vaga['description']}")
         st.write(f"**Requisitos:** {vaga['requirements']}")
-
-        # Inicializar lista de habilidades
         if 'habilidades' not in st.session_state:
             st.session_state.habilidades = []
-
-        # Inicializar estados para campos do formulário
         for field in ['nome', 'email', 'linkedin', 'experiencia', 'escolaridade', 'nivel_ingles', 'nivel_espanhol']:
             if field not in st.session_state:
                 st.session_state[field] = ''
-
-        with st.form("form_candidatura"):  # REMOVIDO: clear_on_submit=True
+        with st.form("form_candidatura"):
             st.subheader("Formulário de Candidatura")
             nome = st.text_input("Nome Completo*", value=st.session_state.nome)
             email = st.text_input("Email*", value=st.session_state.email)
             linkedin = st.text_input("LinkedIn (opcional)", value=st.session_state.linkedin)
-            experiencia = st.selectbox("Nível de Experiência*",
-                                      list(experiencia_map.keys()),
-                                      index=list(experiencia_map.keys()).index(st.session_state.experiencia)
-                                      if st.session_state.experiencia in experiencia_map else 0)
-            escolaridade = st.selectbox("Escolaridade*",
-                                      list(escolaridade_map.keys()),
-                                      index=list(escolaridade_map.keys()).index(st.session_state.escolaridade)
-                                      if st.session_state.escolaridade in escolaridade_map else 0)
-            nivel_ingles = st.selectbox("Inglês*",
-                                      list(idioma_map.keys()),
-                                      index=list(idioma_map.keys()).index(st.session_state.nivel_ingles)
-                                      if st.session_state.nivel_ingles in idioma_map else 0)
-            nivel_espanhol = st.selectbox("Espanhol*",
-                                      list(idioma_map.keys()),
-                                      index=list(idioma_map.keys()).index(st.session_state.nivel_espanhol)
-                                      if st.session_state.nivel_espanhol in idioma_map else 0)
-
-            # Seção de Habilidades
+            experiencia = st.selectbox("Nível de Experiência*", list(experiencia_map.keys()), index=list(experiencia_map.keys()).index(st.session_state.experiencia) if st.session_state.experiencia in experiencia_map else 0)
+            escolaridade = st.selectbox("Escolaridade*", list(escolaridade_map.keys()), index=list(escolaridade_map.keys()).index(st.session_state.escolaridade) if st.session_state.escolaridade in escolaridade_map else 0)
+            nivel_ingles = st.selectbox("Inglês*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.nivel_ingles) if st.session_state.nivel_ingles in idioma_map else 0)
+            nivel_espanhol = st.selectbox("Espanhol*", list(idioma_map.keys()), index=list(idioma_map.keys()).index(st.session_state.nivel_espanhol) if st.session_state.nivel_espanhol in idioma_map else 0)
             st.subheader("Habilidades Técnicas")
-            nova_habilidade = st.text_input(
-                "Digite uma habilidade e clique em Adicionar",
-                placeholder="Ex: Python, SQL, etc."
-            )
-
+            nova_habilidade = st.text_input("Digite uma habilidade e clique em Adicionar", placeholder="Ex: Python, SQL, etc.")
             col_add, col_clear = st.columns(2)
             with col_add:
                 adicionar_habilidade = st.form_submit_button("➕ Adicionar Habilidade")
             with col_clear:
                 limpar_habilidades = st.form_submit_button("🧹 Limpar Todas")
-
             if adicionar_habilidade and nova_habilidade:
                 st.session_state.habilidades.append(nova_habilidade.strip())
                 st.rerun()
-
             if limpar_habilidades:
                 st.session_state.habilidades = []
                 st.rerun()
-
             if st.session_state.habilidades:
                 st.write("**Habilidades adicionadas:**")
                 for i, hab in enumerate(st.session_state.habilidades):
                     st.write(f"{i+1}. {hab}")
-
             enviar_cv = st.file_uploader("CV (PDF ou DOCX)")
             submitted = st.form_submit_button("Enviar Candidatura")
-
             if submitted:
                 if not nome or not email:
                     st.error("Campos obrigatórios não preenchidos (Nome e Email)")
                 else:
-                    dados = {
-                        "vaga": escolha,
-                        "nome": nome,
-                        "email": email,
-                        "linkedin": linkedin,
-                        "experiencia": experiencia,
-                        "escolaridade": escolaridade,
-                        "nivel_ingles": nivel_ingles,
-                        "nivel_espanhol": nivel_espanhol,
-                        "habilidades": ", ".join(st.session_state.habilidades) if st.session_state.habilidades else "Nenhuma",
-                        "cv": enviar_cv.name if enviar_cv else "Nenhum"
-                    }
+                    dados = {"vaga": escolha, "nome": nome, "email": email, "linkedin": linkedin, "experiencia": experiencia, "escolaridade": escolaridade, "nivel_ingles": nivel_ingles, "nivel_espanhol": nivel_espanhol, "habilidades": ", ".join(st.session_state.habilidades) if st.session_state.habilidades else "Nenhuma", "cv": enviar_cv.name if enviar_cv else "Nenhum"}
                     if salvar_candidato_db(dados):
                         st.success("✅ Candidatura enviada com sucesso!")
-                        # Resetar apenas habilidades
                         st.session_state.habilidades = []
-
-                        # Manter outros campos
                         st.session_state.nome = nome
                         st.session_state.email = email
                         st.session_state.linkedin = linkedin
@@ -762,62 +710,42 @@ if menu == "📌 Aplicar para Vagas":
                         st.session_state.nivel_espanhol = nivel_espanhol
                     else:
                         st.error("❌ Erro ao salvar candidatura no banco de dados")
-
     else:
         st.info("Nenhuma vaga disponível. Verifique 'jobs_sample.json'.")
-
 elif menu == "🧠 Recrutamento Decision":
     st.title("🧠 Recrutamento Decision - Análise Preditiva")
     uploaded = st.file_uploader("Upload do CSV de candidatos aplicados", type="csv")
-
     if uploaded:
         df = pd.read_csv(uploaded)
         st.success("Arquivo carregado!")
         st.dataframe(df.head())
-
         faltam = [c for c in ["experiencia","escolaridade","nivel_ingles","nivel_espanhol"] if c not in df.columns]
         if faltam:
             st.warning(f"Campos faltantes: {', '.join(faltam)}")
         st.subheader("Pré-processamento")
         X = preprocess(df)
         st.dataframe(X.head())
-
         if st.button("Analisar com Modelo"):
             try:
                 mdl = joblib.load("modelo_vagas.pkl")
                 df["score_sucesso"] = mdl.predict_proba(X)[:,1]
                 st.subheader("🏆 Ranking de Candidatos")
                 st.dataframe(df.sort_values("score_sucesso", ascending=False))
-
                 st.subheader("📊 Distribuição de Scores")
                 fig = px.histogram(df, x="score_sucesso", nbins=10)
                 st.plotly_chart(fig)
-
-                st.download_button(
-                    "Exportar resultados",
-                    data=df.to_csv(index=False).encode("utf-8"),
-                    file_name="resultado_candidatos.csv",
-                    mime="text/csv"
-                )
+                st.download_button("Exportar resultados", data=df.to_csv(index=False).encode("utf-8"), file_name="resultado_candidatos.csv", mime="text/csv")
             except Exception as e:
                 st.error(f"Erro ao rodar modelo: {e}")
-
 elif menu == "📊 Banco de Candidaturas":
     st.title("📊 Banco de Candidaturas")
     try:
         conn = sqlite3.connect('candidatos.db')
         df = pd.read_sql_query("SELECT * FROM candidaturas", conn)
         conn.close()
-
         if not df.empty:
             st.dataframe(df)
-
-            st.download_button(
-                "Exportar para CSV",
-                data=df.to_csv(index=False).encode('utf-8'),
-                file_name="candidaturas_completas.csv",
-                mime="text/csv"
-            )
+            st.download_button("Exportar para CSV", data=df.to_csv(index=False).encode('utf-8'), file_name="candidaturas_completas.csv", mime="text/csv")
         else:
             st.info("Nenhuma candidatura encontrada no banco de dados")
     except Exception as e:
@@ -839,7 +767,7 @@ elif menu == "📊 Banco de Candidaturas":
 
         # Criar túnel Ngrok
         print("⏳ Criando túnel Ngrok...")
-        public_url = ngrok.connect(addr="8501", proto="http", bind_tls=True)
+        public_url = ngrok.connect(addr="8501", proto="http", bind_tls=True )
 
         # Exibir link de acesso
         print("\n" + "="*50)
@@ -850,7 +778,7 @@ elif menu == "📊 Banco de Candidaturas":
         print("Este link é válido enquanto esta sessão estiver ativa")
         print("Para desativar, interrompa a execução do notebook")
 
-        # Manter o processo ativo
+        # Manter o processo ativo (ESTRUTURA CORRIGIDA)
         try:
             while True:
                 time.sleep(10)
@@ -861,7 +789,7 @@ elif menu == "📊 Banco de Candidaturas":
             print("\nEncerrando aplicativo...")
             process.terminate()
             ngrok.kill()
-            os.remove(STREAMLIT_SCRIPT)  # Limpeza do arquivo temporário
+            os.remove(STREAMLIT_SCRIPT)
 
     except Exception as e:
         print(f"Erro na configuração: {str(e)}")
